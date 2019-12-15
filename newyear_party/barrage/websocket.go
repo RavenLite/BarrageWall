@@ -28,14 +28,6 @@ var (
 	message = make(chan Message, 10)
 )
 
-// user
-type User struct {
-	Name string
-	Image string
-	StudentId string
-	College string
-	Gender string
-}
 
 // message
 type Message struct {
@@ -117,7 +109,7 @@ func broadcaster() {
 		select {
 		// new message
 		case msg := <-message:
-			fmt.Println("broadcaster-----------%s send message: %s\n", msg.Name, msg.Message)
+			fmt.Printf("broadcaster-----------%s send message: %s\n", msg.Name, msg.Message)
 			// Broadcast
 			for client := range clients {
 				data, err := json.Marshal(msg)
@@ -130,7 +122,7 @@ func broadcaster() {
 
 		// new user join
 		case client := <-join:
-			fmt.Println("broadcaster-----------%s join in the chat room\n", client.name)
+			fmt.Printf("broadcaster-----------%s join in the chat room\n", client.name)
 			clients[client] = true
 
 			var msg Message
@@ -142,7 +134,7 @@ func broadcaster() {
 
 		// user exit
 		case client := <-leave:
-			fmt.Println("broadcaster-----------%s leave the chat room\n", client.name)
+			fmt.Printf("broadcaster-----------%s leave the chat room\n", client.name)
 			if !clients[client] {
 				break
 			}

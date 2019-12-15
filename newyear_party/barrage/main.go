@@ -10,7 +10,6 @@ import (
 )
 
 
-
 // TODO: list all users from redis
 func listUsers(w http.ResponseWriter, r *http.Request) {
 	// build connection
@@ -33,10 +32,12 @@ func listUsers(w http.ResponseWriter, r *http.Request) {
 func main()  {
 	go broadcaster()
 	// upgrade http to websocket
+	http.HandleFunc("/test-ws", wsHandler)
+	http.HandleFunc("/login", QQLogin)
 	http.HandleFunc("/ws", wsHandler)
 	http.HandleFunc("/user", listUsers)
 	// monitor localhost:7777
-	err := http.ListenAndServe("0.0.0.0:7777", nil)
+	err := http.ListenAndServe("0.0.0.0:7778", nil)
 	if err != nil {
 		log.Fatal("ListenAndServe Monitoring Error", err.Error())
 	}

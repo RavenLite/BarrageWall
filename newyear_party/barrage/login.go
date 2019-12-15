@@ -32,6 +32,7 @@ func QQLogin(w http.ResponseWriter, r *http.Request)  {
 	_ = json.Unmarshal(requestBody, &requestData)
 	qqSession, _ := qq.Code2Session(requestData.code)
 	sessionKey := qqSession.SessionKey
+	w.Header().Set("Content-type", "application/json")
 	if qq.UserInfoValid(sessionKey, requestData.rawData, requestData.signature) {
 		if qq.ValidStudent(requestData.neuId, requestData.neuPassword) {
 			var userInfo QQUserInfo
@@ -39,6 +40,7 @@ func QQLogin(w http.ResponseWriter, r *http.Request)  {
 			user := db.User{Name:userInfo.NickName, Image:userInfo.AvatarUrl, StudentId: requestData.neuId}
 			uuidStr := db.AddUser(user)
 			_, _ = io.WriteString(w, `{"code":0, "msg":"OK", "session":"`+uuidStr+`"}`)
+			return
 		} else {
 			_, _ = io.WriteString(w, `{"code":-3, "msg":"error neu id or password", "session":""}`)
 			return
