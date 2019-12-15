@@ -13,3 +13,8 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+# IDE & OS
+.DS_Store
+
+./newyear_party/.idea
