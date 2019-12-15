@@ -35,7 +35,6 @@ type User struct {
 	Name string
 	Image string
 	StudentId string
-	Class string
 	College string
 	Gender string
 }
@@ -44,7 +43,6 @@ type User struct {
 type Message struct {
 	Name string
 	Image string
-	Class string
 	Message string
 	Count int
 }
@@ -70,8 +68,8 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	// get params and package to a struct
 	vars := r.URL.Query();
 	fmt.Println(vars)
-	name, image, studentId, class, college, gender := vars["name"][0], vars["image"][0], vars["studentId"][0], vars["class"][0], vars["college"][0], vars["gender"][0]
-	var user = User{name, image, studentId, class, college, gender}
+	name, image, studentId, college, gender := vars["name"][0], vars["image"][0], vars["studentId"][0], vars["college"][0], vars["gender"][0]
+	var user = User{name, image, studentId, college, gender}
 
 	// persistence
 	redisStorage(user)
@@ -103,7 +101,6 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		var msg Message
 		msg.Name = name
 		msg.Image = image
-		msg.Class = class
 		msg.Message = string(msgStr)
 		msg.Count = len(clients)
 		message <- msg
