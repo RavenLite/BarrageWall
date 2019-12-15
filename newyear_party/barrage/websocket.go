@@ -1,13 +1,11 @@
 package main
 
 import (
+	"BarrageWall/newyear_party/barrage/db"
 	"encoding/json"
-	_ "encoding/json"
 	"fmt"
-	"github.com/garyburd/redigo/redis"
-	_ "github.com/garyburd/redigo/redis"
 	"github.com/gorilla/websocket"
-	"log"
+	"io"
 	"net/http"
 )
 
@@ -68,15 +66,19 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	// get params and package to a struct
 	vars := r.URL.Query();
 	fmt.Println(vars)
-	name, image, studentId, college, gender := vars["name"][0], vars["image"][0], vars["studentId"][0], vars["college"][0], vars["gender"][0]
-	var user = User{name, image, studentId, college, gender}
+	userUuid := vars["s"][0]
 
 	// persistence
-	redisStorage(user)
+	user,err  := db.GetUser(userUuid)
+	if err != nil {
+		w.WriteHeader(400)
+		_, _ = io.WriteString(w, "NOT CORRECT SESSION")
+		return
+	}
 
 	// keep connection
 	var client Client
-	client.name = studentId
+	client.name = user.StudentId
 	client.conn = wbsCon
 
 	if !clients[client] {
@@ -85,7 +87,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 
 	defer func() {
 		leave <- client
-		client.conn.Close()
+		_ = client.conn.Close()
 	}()
 
 	for {
@@ -99,34 +101,11 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 
 		// pour new message into Message Panel
 		var msg Message
-		msg.Name = name
-		msg.Image = image
+		msg.Name = user.Name
+		msg.Image = user.Image
 		msg.Message = string(msgStr)
 		msg.Count = len(clients)
 		message <- msg
-	}
-}
-
-// persistent messages using redis
-func redisStorage(user User) {
-	// struct to json
-	userJson, err := json.Marshal(user)
-	if err != nil {
-		fmt.Println("Transferring Error:", err)
-	}
-
-	// build connection
-	conn,err := redis.Dial("tcp","jupyter.neuyan.com:6379", redis.DialDatabase(1), redis.DialPassword("weneudb2019"))
-	if err != nil {
-		fmt.Println("connect redis error :",err)
-		return
-	}
-	defer conn.Close()
-
-	// set value, add a new user json to the end of the list
-	_, err = conn.Do("SET", user.StudentId, userJson)
-	if err != nil {
-		fmt.Println("redis set error:", err)
 	}
 }
 
@@ -139,7 +118,7 @@ func broadcaster() {
 		// new message
 		case msg := <-message:
 			fmt.Println("broadcaster-----------%s send message: %s\n", msg.Name, msg.Message)
-			// Broadcase
+			// Broadcast
 			for client := range clients {
 				data, err := json.Marshal(msg)
 				if err != nil {
@@ -177,36 +156,5 @@ func broadcaster() {
 			// comment: no need for our scene
 			// message <- msg
 		}
-	}
-}
-
-// TODO: list all users from redis
-func listUsers(w http.ResponseWriter, r *http.Request) {
-	// build connection
-	conn,err := redis.Dial("tcp","jupyter.neuyan.com:6379", redis.DialDatabase(1), redis.DialPassword("weneudb2019"))
-	if err != nil {
-		fmt.Println("connect redis error :",err)
-		return
-	}
-	defer conn.Close()
-
-	// get all keys
-	keys, err := conn.Do("KEYS", "*")
-	fmt.Println(keys)
-	if err != nil {
-		fmt.Println("redis KEYS error:", err)
-	}
-
-}
-
-func main()  {
-	go broadcaster()
-	// upgrade http to websocket
-	http.HandleFunc("/ws", wsHandler)
-	http.HandleFunc("/user", listUsers)
-	// monitor localhost:7777
-	err := http.ListenAndServe("0.0.0.0:7777", nil)
-	if err != nil {
-		log.Fatal("ListenAndServe Monitoring Error", err.Error())
 	}
 }
